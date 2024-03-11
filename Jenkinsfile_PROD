@@ -1,0 +1,52 @@
+pipeline {
+  agent any
+    stages {
+
+	stage('Checkout Code'){
+            steps{
+                checkout([$class: 'GitSCM', branches: [[name: '*/test']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: '.']], submoduleCfg: [], userRemoteConfigs: [[url: 'git@github.com:dteenergy/esb-pf-enterpriseAssetManagement-DevonwayServices-mq.git']]])
+            }
+       }
+	stage('MQ Objects Creation on PFMQP01') {
+		steps{
+		script{
+		     def remote = [:]
+			remote.name = "Aix20033"
+			remote.host = "aix20033.dteco.com"
+			remote.allowAnyHosts = true
+			remote.user = "mqm"
+			remote.logLevel = "FINEST"
+			withCredentials([sshUserPrivateKey(credentialsId: 'esbci4', keyFileVariable: 'identity', passphraseVariable: '', usernameVariable: 'userName')]) {
+			remote.identityFile = identity
+			sshPut remote: remote, from: 'deploymq.sh', into: './deploymq.sh'
+			sshCommand remote: remote, command: "ls -ltr"
+			sshCommand remote: remote, command: "chmod 750 ./deploymq.sh"
+      sshCommand remote: remote, command: "sh ./deploymq.sh PFMQP01 PROD"
+			sshRemove remote: remote, path: "deploymq.sh"
+		}
+		}
+        }
+		}
+		stage('MQ Objects Creation on PFMQP02') {
+		steps{
+		script{
+		     def remote = [:]
+			remote.name = "Aix20035"
+			remote.host = "aix20035.dteco.com"
+			remote.allowAnyHosts = true
+			remote.user = "mqm"
+			remote.logLevel = "FINEST"
+			withCredentials([sshUserPrivateKey(credentialsId: 'esbci4', keyFileVariable: 'identity', passphraseVariable: '', usernameVariable: 'userName')]) {
+			remote.identityFile = identity
+			sshPut remote: remote, from: 'deploymq.sh', into: './deploymq.sh'
+			sshCommand remote: remote, command: "ls -ltr"
+			sshCommand remote: remote, command: "chmod 750 ./deploymq.sh"
+           		sshCommand remote: remote, command: "sh ./deploymq.sh PFMQP02 PROD"
+			sshRemove remote: remote, path: "deploymq.sh"
+		}
+		}
+        }
+		}
+
+}
+}
